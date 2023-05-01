@@ -25,17 +25,19 @@ class Piece:
             if self.name == self.names[i]:
                 self.value = self.values[i]
     def __str__(self):
-        return str([self.name, self.sq])
+        return str(self.name)+str(self.sq)
 class Board:
     def __init__(self):
-        self.moves = 0
-        self.match_paper = []
-        for j in range(10):
-            self.match_paper.append(['', ''])
+        self.initPaper()
         self.initSquares()
         self.initPieces()
         self.insertPieces()
         print(self)
+    def initPaper(self):
+        self.moves = 0
+        self.match_paper = []
+        for j in range(10):
+            self.match_paper.append(['', ''])
     def initSquares(self):
         self.letters = 'abcdefgh'+'ABCDEFGH'
         self.size = [6, 7] #row x col
@@ -103,61 +105,75 @@ class Board:
     def startSquare(self, player):
         a = str(input('Give starting square for '+str(player)+': '))
         i, j = self.findSquare(a)
-        s = self.board[j][i]
-        p = s.pieces
-        return a, i, j, s, p
+        square = self.board[j][i]
+        return square
     def endSquare(self, player):
         a = str(input('Give ending square for '+str(player)+': '))
         i, j = self.findSquare(a)
-        s = self.board[j][i]
-        p = s.pieces
-        return a, i, j, s, p
-    
-    
+        square = self.board[j][i]
+        return square
     def get_piece(self, player):
-        a, i, j, s, sq1 = self.startSquare(player)
-        while sq1 == [] or sq1[0].player != player:
+        square = self.startSquare(player)
+        pieces = square.pieces
+        while pieces == [] or pieces[0].player != player:
             print('Empty square or invalid player.')
-            a, i, j, s, sq1 = self.startSquare(player)
-        p1 = sq1.pop()
-        return p1, a
+            square = self.startSquare(player)
+            pieces = square.pieces
+        return square
     def get_square(self, player):
-        b, i, j, s, sq2 = self.endSquare(player)
-        while len(sq2)>0 and sq2[0].player == player:
+        square = self.endSquare(player)
+        pieces = square.pieces
+        while len(pieces)>0 and pieces[0].player == player:
             print('Invalid player.')
-            b, i, j, s, sq2 = self.endSquare(player)
-        return sq2, b
-    def exchange(self, p1, sq2, player):
-        if len(sq2) > 0:
-            p2 = sq2.pop()
+            square = self.endSquare(player)
+            pieces = square.pieces
+        return square
+    
+    def trackMove(self, sq1, sq2, player):
+        move = self.match_paper[self.moves]
+        p1 = sq1.pieces[0]
+        a, b = sq1.sq, sq2.sq
+
+        i = ['White', 'Black'].index(player)
+        if len(sq2.pieces) > 0:
             p1.tookPiece = True
+            s = a+'x'+b
+        else:
+            s = a+'-'+b
+        if p1.name != ' p':
+            move[i] = p1.name+s
+        else:
+            move[i] = s
+        if p1.player == 'Black':
+            self.moves+=1
+    def exchange(self, sq1, sq2, player):
+        p1 = sq1.pieces.pop()
+        if p1.tookPiece == True:
+            p2 = sq2.pieces.pop()
             if player == 'White':
                 self.black.append(p2)
             elif player == 'Black':
                 self.white.append(p2)
-        sq2.append(p1)
-    def trackMove(self, p1, a, b, player):
-        move = self.match_paper[self.moves]
-
-        i = ['White', 'Black'].index(player)
-        if p1.tookPiece == True:
-            square = a+'x'+b
-        else:
-            square = a+'-'+b
-        if p1.name != ' p':
-            move[i] = p1.name+square
-        else:
-            move[i] = square
-        if p1.player == 'Black':
-            self.moves+=1
-        print(self)
-        p1.tookPiece = False
+        p1.sq = sq2.sq
+        sq2.pieces.append(p1)
     def move(self, player):
-        p1, a = self.get_piece(player)
-        sq2, b = self.get_square(player)
-        self.exchange(p1, sq2, player) # Make the move of p1 to the sq2
-
-        self.trackMove(p1, a, b, player) # match paper completion
+        sq1 = self.get_piece(player)
+        sq2 = self.get_square(player)
+        
+        self.trackMove(sq1, sq2, player) # match paper completion
+        self.exchange(sq1, sq2, player) # Make the move of p1 to the sq2
+        print(self)
+        self.show_deceased()
+    
+    def show_deceased(self):
+        w = []
+        for p in self.white:
+            w.append(str(p))
+        b = []
+        for p in self.black:
+            b.append(str(p))
+        print(str(w)+': White')
+        print(str(b)+': Black')
     def __str__(self):
         w = []
         paper = self.match_paper
@@ -193,5 +209,3 @@ b = Board()
 while True:
     b.move('White')
     b.move('Black')
-    print(str(b.white)+': White')
-    print(str(b.black)+': Black')
